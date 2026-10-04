@@ -130,8 +130,8 @@ export default function Footer() {
             <p className="footer__contact-text">
               ¿Tienes dudas o sugerencias?
               <br />
-              <a href="mailto:contact@anikai.com" className="footer__email">
-                contact@anikai.com
+              <a href="mailto:kaigallardosanchez@gmail.com" className="footer__email">
+                kaigallardosanchez@gmail.com
               </a>
             </p>
           </div>
@@ -146,12 +146,12 @@ export default function Footer() {
         <p className="footer__creator">
           Diseñado y trabajado por{' '}
           <a
-            href="https://github.com/kaiglyph"
+            href="https://github.com/kaigallardo"
             target="_blank"
             rel="noopener noreferrer"
             className="footer__creator-link kaiziel"
           >
-            Kaiziel
+            KaiGlyph
           </a>
         </p>
       </div>
