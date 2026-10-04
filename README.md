@@ -1,16 +1,37 @@
-# React + Vite
+# Anikai 🌸
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Anikai** es una plataforma web dedicada al anime, diseñada para gestionar colecciones personales y ofrecer funcionalidades comunitarias. Este proyecto sirve como demostración principal de mis habilidades en desarrollo Frontend, enfocándose en la creación de interfaces modernas, rápidas y centradas en la experiencia de usuario.
 
-Currently, two official plugins are available:
+## 🚀 Funcionalidades principales
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 📚 **Catálogo de Anime:** Exploración completa con sistema de búsqueda avanzada.
+- ⭐ **Gestión Personal:** Listas personalizadas, favoritos y estados de seguimiento (viendo, completado, pendiente, etc.).
+- 🔍 **Filtros Avanzados:** Filtrado por género, año, estudio, estado y valoración.
+- 💬 **Comunidad y Reseñas:** Sistema de valoraciones, reseñas de usuarios y recomendaciones personalizadas.
+- 👤 **Perfiles de Usuario:** Gestión de identidad y preferencias dentro de la plataforma.
+- 🧭 **Sistema de Exploración:** Navegación intuitiva y fluida entre las diferentes secciones.
 
-## React Compiler
+## 🛠️ Tecnologías utilizadas
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend:** React 18 · TypeScript
+- **Build Tool:** Vite
+- **Estilos:** Tailwind CSS
+- **Animaciones:** Framer Motion
+- **Enrutamiento:** React Router DOM
+- **Persistencia:** Local Storage
+- **Despliegue:** Vercel
 
-## Expanding the ESLint configuration
+## 📁 Estructura del proyecto
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```text
+📁 anikai/
+├── public/             # Archivos estáticos (iconos, imágenes)
+├── src/
+│   ├── components/     # Componentes reutilizables de la UI
+│   ├── pages/          # Vistas principales de la aplicación
+│   ├── hooks/          # Custom hooks de React
+│   ├── utils/          # Funciones de utilidad y helpers
+│   ├── types/          # Definiciones de tipos de TypeScript
+│   └── App.tsx         # Componente raíz y enrutamiento
+├── package.json        # Dependencias y scripts del proyecto
+└── vite.config.ts      # Configuración de Vite
