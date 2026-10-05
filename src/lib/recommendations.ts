@@ -179,9 +179,9 @@ async function getAllAnime(): Promise<Anime[]> {
   // const response = await fetch('/data/animes.json');
   // return response.json();
 
-  // Opción 2: Desde Supabase (cuando tengas la tabla)
+  // Opción 2: Desde Supabase 
   const { data, error } = await supabase
-    .from('animes')
+    .from('animes_rows') // <--- CAMBIA 'animes' POR 'animes_rows' AQUÍ
     .select('*');
 
   if (error) {

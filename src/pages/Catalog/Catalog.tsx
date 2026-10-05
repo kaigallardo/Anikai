@@ -62,7 +62,7 @@ export default function Catalog() {
       setLoading(true);
       setError(null);
       const { data, error } = await supabase
-        .from('animes')
+        .from('animes_rows') // <--- CAMBIA 'animes' POR 'animes_rows' AQUÍ
         .select('*')
         .order('popularity', { ascending: false });
       if (error) throw error;

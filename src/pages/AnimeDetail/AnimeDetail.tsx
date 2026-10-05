@@ -143,7 +143,7 @@ export default function AnimeDetail() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('animes').select('*').eq('id', animeId).single();
+      .from('animes').select('*').eq('id', animeId).single();
       if (error) throw error;
       if (!data) throw new Error('Anime no encontrado');
       setAnime(data);
