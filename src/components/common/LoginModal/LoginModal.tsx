@@ -60,7 +60,7 @@ export default function LoginModal({
       // Si no tiene @, buscar email por username
       if (!email.includes('@')) {
         const { data: profile, error: profileError } = await supabase
-          .from('profiles')
+          .from('profiles_rows')
           .select('email')
           .eq('username', email)
           .single();

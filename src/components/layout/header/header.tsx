@@ -31,7 +31,7 @@ export default function Header() {
     setUserEmail(email);
     try {
       const { data: profile } = await supabase
-        .from('profiles')
+        .from('profiles_rows')
         .select('username, avatar_url')
         .eq('id', userId)
         .single();

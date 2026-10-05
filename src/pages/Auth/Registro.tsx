@@ -18,6 +18,45 @@ export default function Registro() {
     username: '', email: '', password: '', confirmPassword: '', acceptTerms: false,
   });
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // FUNCIÓN: Crear listas por defecto si no existen
+  // ─────────────────────────────────────────────────────────────────────────────
+  const createDefaultListsIfNotExist = async (newUserId: string) => {
+  const defaultLists = [
+    { name: 'Animes Vistos', type: 'system', icon: 'check-circle', color: '#2a9d8f' },
+    { name: 'Me gusta', type: 'system', icon: 'heart', color: '#e63946' },
+    { name: 'Ver después', type: 'system', icon: 'clock', color: '#f4a261' }
+  ];
+
+  for (const list of defaultLists) {
+    const { data: existing } = await supabase
+      .from('user_lists_rows')
+      .select('id')
+      .eq('user_id', newUserId)
+      .eq('name', list.name)
+      .eq('type', 'system')
+      .maybeSingle();
+
+    if (!existing) {
+      // 🚨 IMPORTANTE: Generar el ID antes de insertar
+      const newId = crypto.randomUUID();
+      
+      await supabase.from('user_lists_rows').insert({
+        id: newId,  // <--- SIEMPRE pasar el ID
+        user_id: newUserId,
+        name: list.name,
+        type: list.type,
+        icon: list.icon,
+        color: list.color,
+        is_public: false
+      });
+    }
+  }
+};
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MANEJADORES DE EVENTOS
+  // ─────────────────────────────────────────────────────────────────────────────
   const handleGoogleLogin = async () => {
     try {
       setLoadingGoogle(true); setError(null);
@@ -60,12 +99,20 @@ export default function Registro() {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      // 1. Registramos al usuario
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: { data: { username: formData.username } },
       });
+      
       if (error) throw error;
+
+      // 2. 🚨 AQUÍ ESTÁ LA MAGIA: Si el registro fue exitoso, creamos las listas
+      if (data?.user) {
+        await createDefaultListsIfNotExist(data.user.id);
+      }
+
       alert(t('auth.account_created'));
       navigate('/login');
     } catch (err: any) {
@@ -82,6 +129,9 @@ export default function Registro() {
 
   const isAnyLoading = loading || loadingGoogle || loadingDiscord;
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // RENDERIZADO
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div className="registro-page">
       <div className="registro-background"><div className="registro-overlay" /></div>

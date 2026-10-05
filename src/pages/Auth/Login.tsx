@@ -58,7 +58,7 @@ export default function Login() {
       let email = formData.emailOrUsername.trim();
       if (!email.includes('@')) {
         const result = await withTimeout(
-          supabase.from('profiles').select('email').eq('username', email).single(), 5000
+          supabase.from('profiles_rows').select('email').eq('username', email).single(), 5000
         );
         if (result.error || !result.data?.email) throw new Error(t('auth.error_user_not_found'));
         email = result.data.email;

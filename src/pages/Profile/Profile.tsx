@@ -110,7 +110,7 @@ export default function Profile() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profiles_rows')
         .select('*')
         .eq('id', userId)
         .single();
@@ -135,7 +135,7 @@ export default function Profile() {
     if (listIds.length === 0) return;
 
     const { data: listAnimes, error } = await supabase
-      .from('user_list_animes')
+      .from('user_list_animes_rows')
       .select(`
         anime_id,
         status,
@@ -220,7 +220,7 @@ export default function Profile() {
   // ───────────────────────────────────────────────────────────────────────────
   const getUserListIds = async (): Promise<string[]> => {
     const { data } = await supabase
-      .from('user_lists')
+      .from('user_lists_rows')
       .select('id')
       .eq('user_id', userId);
     return data?.map(l => l.id) || [];
@@ -232,7 +232,7 @@ export default function Profile() {
   const fetchLists = async () => {
     if (!userId) return;
     try {
-      const { data, error } = await supabase.rpc('get_user_lists', { p_user_id: userId });
+      const { data, error } = await supabase.rpc('get_user_lists_rows', { p_user_id: userId });
       if (error) throw error;
       setUserLists(data || []);
     } catch (err) {
@@ -263,7 +263,7 @@ export default function Profile() {
       setUsernameError('');
 
       const { error } = await supabase
-        .from('profiles')
+        .from('profiles_rows')
         .update({ username: newUsername.trim(), updated_at: new Date().toISOString() })
         .eq('id', userId);
 
@@ -320,7 +320,7 @@ export default function Profile() {
 
       // Guardar URL en perfil
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from('profiles_rows')
         .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
         .eq('id', userId);
 
@@ -344,7 +344,7 @@ export default function Profile() {
     try {
       const newValue = !profile.is_public;
       const { error } = await supabase
-        .from('profiles')
+        .from('profiles_rows')
         .update({ is_public: newValue, updated_at: new Date().toISOString() })
         .eq('id', userId);
 

@@ -66,7 +66,7 @@ export default function Settings() {
   const loadNotificationPrefs = async () => {
     if (!userId) return;
     try {
-      const { data } = await supabase.from('profiles').select('notification_prefs').eq('id', userId).single();
+      const { data } = await supabase.from('profiles_rows').select('notification_prefs').eq('id', userId).single();
       if (data?.notification_prefs) setNotifications(data.notification_prefs);
     } catch {}
   };
@@ -80,7 +80,7 @@ export default function Settings() {
     setNotifications(updated);
     setSavingNotifs(true);
     try {
-      await supabase.from('profiles').update({ notification_prefs: updated }).eq('id', userId);
+      await supabase.from('profiles_rows').update({ notification_prefs: updated }).eq('id', userId);
       setNotifsSaved(true);
       setTimeout(() => setNotifsSaved(false), 2000);
     } catch {}
@@ -109,7 +109,7 @@ export default function Settings() {
     if (deleteConfirmText !== userEmail) return;
     try {
       setDeletingAccount(true);
-      await supabase.from('profiles').delete().eq('id', userId);
+      await supabase.from('profiles_rows').delete().eq('id', userId);
       await supabase.auth.signOut();
       navigate('/');
     } catch (err: any) {

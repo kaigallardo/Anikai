@@ -108,7 +108,7 @@ export default function AnimeDetail() {
   useEffect(() => {
     if (isLoggedIn && userId && anime) {
       supabase
-        .from('user_lists')
+        .from('user_lists_rows')
         .select('id')
         .eq('user_id', userId)
         .eq('name', 'Me gusta')
@@ -117,7 +117,7 @@ export default function AnimeDetail() {
           if (!data?.id) return;
           setLikeListId(data.id);
           supabase
-            .from('user_list_animes')
+            .from('user_list_animes_rows')
             .select('id')
             .eq('list_id', data.id)
             .eq('anime_id', anime.id)
@@ -143,7 +143,7 @@ export default function AnimeDetail() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-      .from('animes').select('*').eq('id', animeId).single();
+      .from('animes_rows').select('*').eq('id', animeId).single();
       if (error) throw error;
       if (!data) throw new Error('Anime no encontrado');
       setAnime(data);
@@ -159,8 +159,45 @@ export default function AnimeDetail() {
   // ───────────────────────────────────────────────────────────────────────────
   const fetchUserLists = async () => {
     if (!userId) return;
-    const { data } = await supabase.rpc('get_user_lists', { p_user_id: userId });
-    setUserLists(data || []);
+    try {
+      console.log('🔄 Cargando listas del usuario...');
+      
+      // 1. Obtener todas las listas del usuario
+      const { data: lists, error: listsError } = await supabase
+        .from('user_lists_rows')
+        .select('*')
+        .eq('user_id', userId)
+        .order('type', { ascending: true })
+        .order('name', { ascending: true });
+
+      if (listsError) throw listsError;
+
+      // 2. Para cada lista, contar cuántos animes tiene
+      const listsWithCount = await Promise.all(
+        (lists || []).map(async (list: any) => {
+          const { count, error: countError } = await supabase
+            .from('user_list_animes_rows')
+            .select('*', { count: 'exact', head: true })
+            .eq('list_id', list.id);
+
+          if (countError) {
+            console.error('Error al contar animes:', countError);
+            return { ...list, anime_count: 0 };
+          }
+
+          return {
+            ...list,
+            anime_count: count || 0,
+          };
+        })
+      );
+
+      console.log('✅ Listas cargadas:', listsWithCount.length);
+      setUserLists(listsWithCount);
+      
+    } catch (err: any) {
+      console.error('Error al cargar listas:', err);
+    }
   };
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -170,7 +207,7 @@ export default function AnimeDetail() {
     if (!userId || !id) return;
     try {
       const { data } = await supabase
-        .from('user_list_animes')
+        .from('user_list_animes_rows')
         .select('list_id, status, episodes_watched, score')
         .eq('anime_id', id);
 
@@ -195,14 +232,25 @@ export default function AnimeDetail() {
   // ───────────────────────────────────────────────────────────────────────────
   const handleToggleList = async (listId: string) => {
     if (!anime || !userId || togglingList) return;
+    
     setTogglingList(listId);
     const isIn = animeInListIds.includes(listId);
+    
     try {
       if (isIn) {
-        await supabase.rpc('remove_anime_from_list', { p_list_id: listId, p_anime_id: anime.id });
-        const newIds = animeInListIds.filter(l => l !== listId);
+        // Quitar de la lista
+        const { error } = await supabase
+          .from('user_list_animes_rows')
+          .delete()
+          .eq('list_id', listId)
+          .eq('anime_id', anime.id);
+
+        if (error) throw error;
+
+        const newIds = animeInListIds.filter(id => id !== listId);
         setAnimeInListIds(newIds);
         setIsInLists(newIds.length > 0);
+        
         if (trackingListId === listId) {
           setTrackingListId(null);
           setCurrentStatus('');
@@ -210,10 +258,30 @@ export default function AnimeDetail() {
           setUserScore(0);
         }
       } else {
-        await supabase.rpc('add_anime_to_list', { p_list_id: listId, p_anime_id: anime.id, p_status: 'planned' });
+        // Añadir a la lista
+        const { error } = await supabase
+          .from('user_list_animes_rows')
+          .insert({
+            list_id: listId,
+            anime_id: anime.id,
+            status: 'planned',
+            episodes_watched: 0,
+            score: 0,
+            added_at: new Date().toISOString()
+          });
+
+        if (error) {
+          if (error.code === '23505') {
+            console.log('Anime ya está en la lista');
+          } else {
+            throw error;
+          }
+        }
+
         const newIds = [...animeInListIds, listId];
         setAnimeInListIds(newIds);
         setIsInLists(true);
+        
         if (!trackingListId) {
           setTrackingListId(listId);
           setCurrentStatus('planned');
@@ -221,8 +289,12 @@ export default function AnimeDetail() {
           setUserScore(0);
         }
       }
-      fetchUserLists();
+      
+      // 🚨 IMPORTANTE: Refrescar las listas para actualizar contadores
+      await fetchUserLists();
+      
     } catch (err: any) {
+      console.error('Error al togglear lista:', err);
       alert('Error: ' + err.message);
     } finally {
       setTogglingList(null);
@@ -239,20 +311,29 @@ export default function AnimeDetail() {
 
       const eps = getEpisodesForStatus(currentStatus, anime.episodes || 0);
 
+      // Actualizar el registro existente
       const { error } = await supabase
-        .from('user_list_animes')
+        .from('user_list_animes_rows')
         .update({
           status: currentStatus || 'planned',
           episodes_watched: eps,
           score: userScore,
-          updated_at: new Date().toISOString(),
         })
         .eq('list_id', trackingListId)
         .eq('anime_id', anime.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error al guardar seguimiento:', error);
+        throw error;
+      }
+
+      console.log('✅ Seguimiento guardado correctamente');
       setEpisodesWatched(eps);
       setTrackingDirty(false);
+      
+      // Refrescar las listas para actualizar contadores
+      await fetchUserLists();
+      
     } catch (err: any) {
       console.error('Error al guardar seguimiento:', err);
       alert('Error: ' + err.message);
@@ -267,10 +348,10 @@ export default function AnimeDetail() {
   const getOrCreateLikeList = async (): Promise<string | null> => {
     if (!userId) return null;
     const { data: existing } = await supabase
-      .from('user_lists').select('id').eq('user_id', userId).eq('name', 'Me gusta').maybeSingle();
+      .from('user_lists_rows').select('id').eq('user_id', userId).eq('name', 'Me gusta').maybeSingle();
     if (existing?.id) return existing.id;
     const { data: created, error } = await supabase
-      .from('user_lists')
+      .from('user_lists_rows')
       .insert({ user_id: userId, name: 'Me gusta', type: 'system', color: '#ec4899', icon: 'heart', is_public: false })
       .select('id').single();
     if (error) return null;
@@ -278,22 +359,89 @@ export default function AnimeDetail() {
   };
 
   const handleLike = async () => {
-    if (!isLoggedIn) { setShowLoginModal(true); return; }
+    if (!isLoggedIn) {
+      setShowLoginModal(true);
+      return;
+    }
     if (!anime || likingAnime) return;
+    
     setLikingAnime(true);
+    
     try {
-      const listId = likeListId || await getOrCreateLikeList();
-      if (!listId) return;
-      setLikeListId(listId);
+      let listId = likeListId;
+      
+      if (!listId) {
+        const { data: existingList } = await supabase
+          .from('user_lists_rows')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('name', 'Me gusta')
+          .eq('type', 'system')
+          .maybeSingle();
+
+        if (existingList) {
+          listId = existingList.id;
+          setLikeListId(listId);
+        } else {
+          const newListId = crypto.randomUUID();
+          const { data: newList, error: createError } = await supabase
+            .from('user_lists_rows')
+            .insert({
+              id: newListId,
+              user_id: userId,
+              name: 'Me gusta',
+              type: 'system',
+              icon: 'heart',
+              color: '#ec4899',
+              is_public: false
+            })
+            .select('id')
+            .single();
+
+          if (createError) throw createError;
+          listId = newList.id;
+          setLikeListId(listId);
+        }
+      }
+
       if (isLiked) {
-        await supabase.rpc('remove_anime_from_list', { p_list_id: listId, p_anime_id: anime.id });
+        const { error } = await supabase
+          .from('user_list_animes_rows')
+          .delete()
+          .eq('list_id', listId)
+          .eq('anime_id', anime.id);
+
+        if (error) throw error;
         setIsLiked(false);
       } else {
-        await supabase.rpc('add_anime_to_list', { p_list_id: listId, p_anime_id: anime.id, p_status: 'completed' });
-        setIsLiked(true);
+        const { error } = await supabase
+          .from('user_list_animes_rows')
+          .insert({
+            list_id: listId,
+            anime_id: anime.id,
+            status: 'completed',
+            episodes_watched: 0,
+            score: 0,
+            added_at: new Date().toISOString()
+          });
+
+        if (error) {
+          if (error.code === '23505') {
+            console.log('Anime ya está en favoritos');
+            setIsLiked(true);
+          } else {
+            throw error;
+          }
+        } else {
+          setIsLiked(true);
+        }
       }
+      
+      // 🚨 IMPORTANTE: Refrescar las listas
+      await fetchUserLists();
+      
     } catch (err) {
-      console.error(err);
+      console.error('Error al dar like:', err);
     } finally {
       setLikingAnime(false);
     }
